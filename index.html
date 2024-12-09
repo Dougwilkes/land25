@@ -68,7 +68,7 @@ function recalculate() {
 
   const totalLots = acres * usablePercent * lotsPerAcre;
 
-  // Scenario Purchase Prices
+  // Scenario Revenues
   const entitledRevenue = totalLots * entitledLotPrice;
   const developedRevenue = totalLots * developedLotPrice;
 
@@ -82,11 +82,11 @@ function recalculate() {
   const landEntitlementSubtotal = landPurchaseTotal + engineering + surveying + adminLegal + environmental + geoTests;
 
   // Grading costs per difficulty
-  let gradingCostPerAcre = (difficulty === 'easy')?13000:(difficulty==='normal'?27500:55000);
+  let gradingCostPerAcre = (difficulty === 'easy') ? 13000 : (difficulty === 'normal' ? 27500 : 55000);
   const clearingGrading = gradingCostPerAcre * acres;
 
   // Erosion control per difficulty
-  let erosionCostPerAcre = (difficulty === 'easy')?4000:(difficulty==='normal'?5000:9500);
+  let erosionCostPerAcre = (difficulty === 'easy') ? 4000 : (difficulty === 'normal' ? 5000 : 9500);
   const erosionControl = erosionCostPerAcre * acres;
 
   // Tap, well, septic fees (per lot)
@@ -144,27 +144,21 @@ function recalculate() {
 
   // Total Costs
   // Entitled scenario: landEntitlementSubtotal + marketing
-  const totalEntitledCost = landEntitlementSubtotal + marketingEntitled; 
+  const totalEntitledCost = landEntitlementSubtotal + marketingEntitled;
   const entitledProfit = entitledRevenue - totalEntitledCost;
-  const entitledMargin = entitledProfit / totalEntitledCost;
+  const entitledMargin = (totalEntitledCost > 0) ? (entitledProfit / totalEntitledCost) : 0;
 
   // Developed scenario: all included
   const totalDevelopedCost = baseCostNoPMNoMktNoFin + pmDeveloped + financingSubtotal + marketingDeveloped;
   const developedProfit = developedRevenue - totalDevelopedCost;
-  const developedMargin = developedProfit / totalDevelopedCost;
+  const developedMargin = (totalDevelopedCost > 0) ? (developedProfit / totalDevelopedCost) : 0;
 
-  // Recommended Prices if < selected margin
-  let recommendedEntitledPrice = 0;
-  if (entitledMargin < (targetMargin/100)) {
-    // final price needed = totalEntitledCost * (1 + targetMargin%)
-    // recommended lot price = (totalEntitledCost * (1 + targetMargin%)) / totalLots
-    recommendedEntitledPrice = (totalEntitledCost * (1+(targetMargin/100))) / (totalLots||1);
-  }
+  // Land cost is purchase price, other costs is total costs minus land
+  const entitledLandOnly = landPurchaseTotal;
+  const entitledOtherCosts = totalEntitledCost - landPurchaseTotal;
 
-  let recommendedDevelopedPrice = 0;
-  if (developedMargin < (targetMargin/100)) {
-    recommendedDevelopedPrice = (totalDevelopedCost * (1+(targetMargin/100))) / (totalLots||1);
-  }
+  const developedLandOnly = landPurchaseTotal;
+  const developedOtherCosts = totalDevelopedCost - landPurchaseTotal;
 
   // Update displayed values
   document.getElementById('totalLots').textContent = formatNumber(totalLots);
@@ -195,8 +189,7 @@ function recalculate() {
   document.getElementById('septicFeeEnt').textContent = formatNumber(0);
   document.getElementById('septicFeeDev').textContent = formatNumber(septicFeesTotal);
 
-  const sitePrepEnt = 0;
-  document.getElementById('sitePrepEntSubtotal').textContent = formatNumber(sitePrepEnt);
+  document.getElementById('sitePrepEntSubtotal').textContent = formatNumber(0);
   document.getElementById('sitePrepDevSubtotal').textContent = formatNumber(sitePrepDeveloped);
 
   // Road & Infrastructure
@@ -215,8 +208,7 @@ function recalculate() {
   document.getElementById('electricGasEnt').textContent = formatNumber(0);
   document.getElementById('electricGasDev').textContent = formatNumber(electricGas);
 
-  const roadInfraEnt = 0;
-  document.getElementById('roadInfraEntSubtotal').textContent = formatNumber(roadInfraEnt);
+  document.getElementById('roadInfraEntSubtotal').textContent = formatNumber(0);
   document.getElementById('roadInfraDevSubtotal').textContent = formatNumber(roadInfraDeveloped);
 
   // Lot Improvements
@@ -232,8 +224,7 @@ function recalculate() {
   document.getElementById('landscapingEnt').textContent = formatNumber(0);
   document.getElementById('landscapingDev').textContent = formatNumber(landscaping);
 
-  const lotImpEnt = 0;
-  document.getElementById('lotImpEntSubtotal').textContent = formatNumber(lotImpEnt);
+  document.getElementById('lotImpEntSubtotal').textContent = formatNumber(0);
   document.getElementById('lotImpDevSubtotal').textContent = formatNumber(lotImprovementsDeveloped);
 
   // Soft Costs
@@ -246,8 +237,7 @@ function recalculate() {
   document.getElementById('insuranceEnt').textContent = formatNumber(0);
   document.getElementById('insuranceDev').textContent = formatNumber(insurance);
 
-  const softCostsEnt = 0;
-  document.getElementById('softCostsEntSubtotal').textContent = formatNumber(softCostsEnt);
+  document.getElementById('softCostsEntSubtotal').textContent = formatNumber(0);
   document.getElementById('softCostsDevSubtotal').textContent = formatNumber(softCostsBase);
 
   // Contingency & Reserves
@@ -257,8 +247,7 @@ function recalculate() {
   document.getElementById('ownerReserveEnt').textContent = formatNumber(0);
   document.getElementById('ownerReserveDev').textContent = formatNumber(ownerReserve);
 
-  const contEnt = 0;
-  document.getElementById('contEntSubtotal').textContent = formatNumber(contEnt);
+  document.getElementById('contEntSubtotal').textContent = formatNumber(0);
   document.getElementById('contDevSubtotal').textContent = formatNumber(contingencySubtotal);
 
   // Financing
@@ -279,20 +268,21 @@ function recalculate() {
   const perLotDev = (totalLots>0)?totalDevelopedCost/totalLots:0;
   document.getElementById('perLotCostDev').textContent = formatNumber(perLotDev);
 
-  // Profits
-  document.getElementById('entitledBasis').textContent = formatNumber(entitledRevenue);
-  document.getElementById('entitledCosts').textContent = formatNumber(totalEntitledCost);
-  document.getElementById('entitledProfit').textContent = formatNumber(entitledProfit);
+  // Profit & Margin with the new definitions
+  const entitledProfitText = formatNumber(entitledProfit);
+  const developedProfitText = formatNumber(developedProfit);
+  const entitledMarginPercent = (entitledMargin * 100).toFixed(2) + '%';
+  const developedMarginPercent = (developedMargin * 100).toFixed(2) + '%';
 
-  document.getElementById('developedBasis').textContent = formatNumber(developedRevenue);
-  document.getElementById('developedCosts').textContent = formatNumber(totalDevelopedCost);
-  document.getElementById('developedProfit').textContent = formatNumber(developedProfit);
+  document.getElementById('entitledLandCost').textContent = formatNumber(entitledLandOnly);
+  document.getElementById('entitledOtherCosts').textContent = formatNumber(entitledOtherCosts);
+  document.getElementById('entitledProfit').textContent = entitledProfitText;
+  document.getElementById('entitledMargin').textContent = entitledMarginPercent;
 
-  // Recommended prices based on chosen margin
-  const recEnt = (recommendedEntitledPrice>0)?recommendedEntitledPrice:0;
-  const recDev = (recommendedDevelopedPrice>0)?recommendedDevelopedPrice:0;
-  document.getElementById('recEntPrice').textContent = (recEnt>0) ? formatNumber(Math.round(recEnt)) : 'N/A';
-  document.getElementById('recDevPrice').textContent = (recDev>0) ? formatNumber(Math.round(recDev)) : 'N/A';
+  document.getElementById('developedLandCost').textContent = formatNumber(developedLandOnly);
+  document.getElementById('developedOtherCosts').textContent = formatNumber(developedOtherCosts);
+  document.getElementById('developedProfit').textContent = developedProfitText;
+  document.getElementById('developedMargin').textContent = developedMarginPercent;
 }
 </script>
 </head>
@@ -725,46 +715,30 @@ function recalculate() {
   <option value="40">40%</option>
 </select>
 
-<p class="notes">Showing Purchase Price, Costs, and Profit for Entitled and Developed Scenarios</p>
+<p class="notes">Purchase Price now represents the land cost, Costs are all other incurred costs (Purchase Price + Other Costs = Total Costs), and Profit is revenue minus total costs. Profit Margin = Profit / Total Costs.</p>
+
 <table>
-  <colgroup><col><col><col><col></colgroup>
+  <colgroup><col><col><col><col><col></colgroup>
   <tr>
     <th>Scenario</th>
-    <th>Purchase Price</th>
-    <th>Costs</th>
+    <th>Purchase Price (Land)</th>
+    <th>Other Costs</th>
     <th>Profit</th>
+    <th>Profit Margin</th>
   </tr>
   <tr>
     <td>Sell Entitled Land</td>
-    <td id="entitledBasis"></td>
-    <td id="entitledCosts"></td>
+    <td id="entitledLandCost"></td>
+    <td id="entitledOtherCosts"></td>
     <td id="entitledProfit"></td>
+    <td id="entitledMargin"></td>
   </tr>
   <tr>
     <td>Sell Fully Developed Lots</td>
-    <td id="developedBasis"></td>
-    <td id="developedCosts"></td>
+    <td id="developedLandCost"></td>
+    <td id="developedOtherCosts"></td>
     <td id="developedProfit"></td>
-  </tr>
-</table>
-
-<p class="notes"><b>If profit is less than selected margin, recommended lot prices to achieve that profit margin:</b></p>
-<table>
-  <colgroup><col><col><col><col></colgroup>
-  <tr>
-    <th>Scenario</th>
-    <th>Recommended Lot Price</th>
-    <th colspan="2"></th>
-  </tr>
-  <tr>
-    <td>Entitled</td>
-    <td id="recEntPrice"></td>
-    <td colspan="2"></td>
-  </tr>
-  <tr>
-    <td>Developed</td>
-    <td id="recDevPrice"></td>
-    <td colspan="2"></td>
+    <td id="developedMargin"></td>
   </tr>
 </table>
 
