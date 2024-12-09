@@ -44,13 +44,19 @@ function formatNumber(num) {
 }
 
 function recalculate() {
-  // Get input values
+  // Inputs
   const acres = parseFloat(document.getElementById('inputAcres').value) || 0;
+  const costPerAcre = parseFloat(document.getElementById('costPerAcre').value) || 0;
   const usablePercent = parseFloat(document.getElementById('selectUsable').value) || 0;
   const lotsPerAcre = parseFloat(document.getElementById('inputLotsPerAcre').value) || 0;
-  const costPerAcre = parseFloat(document.getElementById('costPerAcre').value) || 0;
+  const entitledLotPrice = parseFloat(document.getElementById('entitledLotPrice').value) || 0;
+  const developedLotPrice = parseFloat(document.getElementById('developedLotPrice').value) || 0;
+  const tapFee = parseFloat(document.getElementById('tapFee').value) || 0;
+  const difficulty = document.getElementById('gradingDifficulty').value;
+  const primeRate = parseFloat(document.getElementById('primeRate').value) || 0;
+  const carryingMonths = parseFloat(document.getElementById('carryingMonths').value) || 12;
 
-  // Calculate number of lots
+  // Calculate total lots
   const totalLots = acres * usablePercent * lotsPerAcre;
   document.getElementById('totalLots').textContent = formatNumber(totalLots);
 
@@ -61,19 +67,48 @@ function recalculate() {
   const adminLegal = 30000;
   const environmental = 5000;
   const geoTests = 5000;
-
   const landEntitlementSubtotal = landPurchaseTotal + engineering + surveying + adminLegal + environmental + geoTests;
+  
   document.getElementById('landPurchaseCost').textContent = formatNumber(landPurchaseTotal);
   document.getElementById('landEntitlementSubtotal').textContent = formatNumber(landEntitlementSubtotal);
 
-  // Site Prep
-  const clearingGrading = 40000;
-  const erosionControl = 10000;
-  const soilStabilization = 5000;
-  const sitePrepSubtotal = clearingGrading + erosionControl + soilStabilization;
+  // Site Preparation: Clearing & Grading and Erosion Control
+  // Approx midpoints for grading (per acre):
+  // Easy: ~13,000/acre
+  // Normal: ~27,500/acre
+  // Hilly: ~55,000/acre
+  let gradingCostPerAcre = 0;
+  if (difficulty === 'easy') {
+    gradingCostPerAcre = 13000;
+  } else if (difficulty === 'normal') {
+    gradingCostPerAcre = 27500;
+  } else {
+    gradingCostPerAcre = 55000;
+  }
+  
+  const clearingGrading = gradingCostPerAcre * acres;
+
+  // Erosion Control & Soil Stabilization midpoints (per acre):
+  // Easy: ~4,000/acre
+  // Normal: ~5,000/acre
+  // Hilly: ~9,500/acre
+  let erosionCostPerAcre = 0;
+  if (difficulty === 'easy') {
+    erosionCostPerAcre = 4000;
+  } else if (difficulty === 'normal') {
+    erosionCostPerAcre = 5000;
+  } else {
+    erosionCostPerAcre = 9500;
+  }
+  const erosionControl = erosionCostPerAcre * acres;
+
+  // Tap fees (per lot)
+  const tapFeesTotal = tapFee * totalLots;
+
+  const sitePrepSubtotal = clearingGrading + erosionControl + tapFeesTotal;
   document.getElementById('sitePrepSubtotal').textContent = formatNumber(sitePrepSubtotal);
 
-  // Roadway & Infrastructure
+  // Roadway & Infrastructure (same as before)
   const roadConstruction = 300 * 5280;
   const lightingSignage = 50000;
   const waterSewer = 5000 * totalLots;
@@ -83,58 +118,89 @@ function recalculate() {
   document.getElementById('roadInfraSubtotal').textContent = formatNumber(roadInfraSubtotal);
 
   // Lot Improvements
+  // Landscaping: use leftover acres = acres*(1 - usablePercent)
+  // $7,000 per acre of leftover land
+  const leftoverAcres = acres * (1 - usablePercent);
+  const landscaping = leftoverAcres * 7000;
+
+  // Service laterals, grading/finishing per lot now included in site prep above?
+  // The instructions didn't remove them, but we never had a separate per-lot grading in improvements.
+  // We'll keep service laterals the same:
   const serviceLaterals = 1000 * totalLots;
-  const lotGrading = 500 * totalLots;
+  const lotGradingFinish = 500 * totalLots; // from original line items
   const commonAmenities = 50000;
-  const landscaping = 25000;
-  const lotImprovementsSubtotal = serviceLaterals + lotGrading + commonAmenities + landscaping;
+  const lotImprovementsSubtotal = serviceLaterals + lotGradingFinish + commonAmenities + landscaping;
   document.getElementById('lotImprovementsSubtotal').textContent = formatNumber(lotImprovementsSubtotal);
 
-  // Soft Costs
+  // Soft Costs (Remove Project Management fixed line)
+  // We'll have Add’l Engineering/Consulting, Accounting/Legal, Insurance, Marketing/Sales only
   const addlEng = 25000;
-  const projectMgmt = 20000;
   const accountingLegal = 10000;
   const insurance = 5000;
   const marketing = 15000;
-  const softCostsSubtotal = addlEng + projectMgmt + accountingLegal + insurance + marketing;
-  document.getElementById('softCostsSubtotal').textContent = formatNumber(softCostsSubtotal);
+  // Project management handled separately depending on scenario
+  const softCostsBase = addlEng + accountingLegal + insurance + marketing;
+  document.getElementById('softCostsSubtotal').textContent = formatNumber(softCostsBase);
 
-  // Contingency (10% of Hard Costs)
+  // Hard Costs (no project management yet)
   const hardCosts = landEntitlementSubtotal + sitePrepSubtotal + roadInfraSubtotal + lotImprovementsSubtotal;
+
+  // Contingency & Reserves (10% of hard costs + 50,000 reserve)
   const contingency = hardCosts * 0.10;
   const ownerReserve = 50000;
   const contingencySubtotal = contingency + ownerReserve;
   document.getElementById('contingencySubtotal').textContent = formatNumber(contingencySubtotal);
 
-  // Financing Costs
-  const loanInterest = 100000;
-  const loanFees = 10000;
-  const carryingCosts = 5000;
-  const financingSubtotal = loanInterest + loanFees + carryingCosts;
+  // At this point, we have a base cost: hardCosts + softCostsBase + contingencySubtotal
+  const baseCostNoPM = hardCosts + softCostsBase + contingencySubtotal;
+
+  // Financing:
+  // Use primeRate+2% and carryingMonths to calculate financing cost
+  // Financing = baseCostNoPM + (we must consider PM for developed scenario)
+  // We'll first handle Entitled scenario (no PM, no dev)
+  
+  // ENTITLED SCENARIO:
+  // Basis = totalLots * entitledLotPrice
+  // Costs = landEntitlementSubtotal only (since we're not developing)
+  // Profit = Basis - Costs
+  const entitledBasis = totalLots * entitledLotPrice;
+  const entitledCosts = landEntitlementSubtotal; 
+  const entitledProfit = entitledBasis - entitledCosts;
+
+  // DEVELOPED SCENARIO:
+  // Basis = totalLots * developedLotPrice
+  const developedBasis = totalLots * developedLotPrice;
+  // Project Management = 5% of developedBasis
+  const projectMgmt = developedBasis * 0.05;
+  
+  // Now recalculate Financing:
+  // Financing cost = (baseCostNoPM + projectMgmt) * ( (primeRate+2%) * (carryingMonths/12) )
+  const totalRate = (primeRate + 2) / 100.0; // convert to decimal
+  const financingSubtotal = (baseCostNoPM + projectMgmt) * totalRate * (carryingMonths / 12);
+
+  // Total Developed Costs:
+  const developedCosts = baseCostNoPM + projectMgmt + financingSubtotal;
+  const developedProfit = developedBasis - developedCosts;
+
   document.getElementById('financingSubtotal').textContent = formatNumber(financingSubtotal);
 
-  // Total Project Cost
-  const totalProjectCost = hardCosts + softCostsSubtotal + contingencySubtotal + financingSubtotal;
-  document.getElementById('totalProjectCost').textContent = formatNumber(totalProjectCost);
+  // Total Project Cost (developed)
+  document.getElementById('totalProjectCost').textContent = formatNumber(developedCosts);
 
-  // Per-Lot Cost
-  const perLotCost = totalLots > 0 ? totalProjectCost / totalLots : 0;
+  // Per-Lot Cost (developed)
+  const perLotCost = totalLots > 0 ? developedCosts / totalLots : 0;
   document.getElementById('perLotCost').textContent = formatNumber(perLotCost);
 
-  // Profit Calculations
-  // Assume Entitled Land Sell Price = $8,000 per lot
-  // Profit if Entitled: (RevenueEntitled - Entitlement Costs)
-  // RevenueEntitled = totalLots * 8000
-  const revenueEntitled = totalLots * 8000;
-  const profitEntitled = revenueEntitled - landEntitlementSubtotal;
-  document.getElementById('profitEntitled').textContent = formatNumber(profitEntitled);
+  // Update Profit Calculations Table
+  // Entitled scenario: show basis, costs, profit
+  document.getElementById('entitledBasis').textContent = formatNumber(entitledBasis);
+  document.getElementById('entitledCosts').textContent = formatNumber(entitledCosts);
+  document.getElementById('entitledProfit').textContent = formatNumber(entitledProfit);
 
-  // Assume Fully Developed Sell Price = $35,000 per lot
-  // Profit if Developed: (RevenueDeveloped - Total Project Cost)
-  // RevenueDeveloped = totalLots * 35000
-  const revenueDeveloped = totalLots * 35000;
-  const profitDeveloped = revenueDeveloped - totalProjectCost;
-  document.getElementById('profitDeveloped').textContent = formatNumber(profitDeveloped);
+  // Developed scenario: basis, costs, profit
+  document.getElementById('developedBasis').textContent = formatNumber(developedBasis);
+  document.getElementById('developedCosts').textContent = formatNumber(developedCosts);
+  document.getElementById('developedProfit').textContent = formatNumber(developedProfit);
 }
 </script>
 </head>
@@ -152,7 +218,7 @@ function recalculate() {
   <tr>
     <th>Cost per Acre</th>
     <td><input type="number" id="costPerAcre" value="7000" step="1" oninput="recalculate()" /></td>
-    <td class="notes">Enter cost per acre</td>
+    <td class="notes">Cost of land per acre</td>
   </tr>
   <tr>
     <th>% Usable Acreage</th>
@@ -171,12 +237,54 @@ function recalculate() {
   <tr>
     <th>Lots per Acre</th>
     <td><input type="number" id="inputLotsPerAcre" value="4" step="0.1" oninput="recalculate()" /></td>
-    <td class="notes">Enter assumed density</td>
+    <td class="notes">Assumed density</td>
+  </tr>
+  <tr>
+    <th>Land Grading Difficulty</th>
+    <td>
+      <select id="gradingDifficulty" onchange="recalculate()">
+        <option value="easy" selected>Easy</option>
+        <option value="normal">Normal</option>
+        <option value="hilly">Hilly</option>
+      </select>
+    </td>
+    <td class="notes">Select site difficulty</td>
+  </tr>
+  <tr>
+    <th>Entitled Lot Price to Builder</th>
+    <td><input type="number" id="entitledLotPrice" value="8000" step="100" oninput="recalculate()" /></td>
+    <td class="notes">Builder's price per entitled lot</td>
+  </tr>
+  <tr>
+    <th>Developed Lot Price to Builder</th>
+    <td><input type="number" id="developedLotPrice" value="35000" step="500" oninput="recalculate()" /></td>
+    <td class="notes">Builder's price per developed lot</td>
+  </tr>
+  <tr>
+    <th>Sewer & Water Tap Fee (per lot)</th>
+    <td><input type="number" id="tapFee" value="2000" step="100" oninput="recalculate()" /></td>
+    <td class="notes">Per-lot tap fees</td>
+  </tr>
+  <tr>
+    <th>Prime Rate (%)</th>
+    <td><input type="number" id="primeRate" value="5" step="0.1" oninput="recalculate()" /></td>
+    <td class="notes">Prime interest rate for financing</td>
+  </tr>
+  <tr>
+    <th>Carrying Period (months)</th>
+    <td>
+      <select id="carryingMonths" onchange="recalculate()">
+        <option value="12" selected>12</option>
+        <option value="18">18</option>
+        <option value="24">24</option>
+      </select>
+    </td>
+    <td class="notes">Select carrying period</td>
   </tr>
   <tr>
     <th>Total Lots</th>
     <td><span id="totalLots"></span></td>
-    <td class="notes">Calculated: Acres * %Usable * Lots/Acre</td>
+    <td class="notes">Acres * %Usable * Lots/Acre</td>
   </tr>
 </table>
 
@@ -195,15 +303,15 @@ function recalculate() {
 
 <table>
   <tr><th colspan="5">SITE PREPARATION</th></tr>
-  <tr><td>Clearing & Grading</td><td colspan="3">40,000</td><td></td></tr>
-  <tr><td>Erosion Control</td><td colspan="3">10,000</td><td></td></tr>
-  <tr><td>Soil Stabilization</td><td colspan="3">5,000</td><td></td></tr>
+  <tr><td>Clearing & Grading</td><td colspan="3">Calculated by difficulty & acres</td><td></td></tr>
+  <tr><td>Erosion Control & Stabilization</td><td colspan="3">Calculated by difficulty & acres</td><td></td></tr>
+  <tr><td>Sewer & Water Tap Fees (per lot)</td><td colspan="3">Tap Fee * Lots</td><td></td></tr>
   <tr class="subtotal"><td>Subtotal Site Prep</td><td colspan="3"><span id="sitePrepSubtotal"></span></td><td></td></tr>
 </table>
 
 <table>
   <tr><th colspan="5">ROADWAY & INFRASTRUCTURE</th></tr>
-  <tr><td>Road Construction</td><td colspan="3">Calculated: 300/ft * 5280 ft</td><td></td></tr>
+  <tr><td>Road Construction</td><td colspan="3">300/ft * 5280 ft</td><td></td></tr>
   <tr><td>Street Lighting/Signage</td><td colspan="3">50,000</td><td></td></tr>
   <tr><td>Water & Sewer Mains (per lot)</td><td colspan="3">5,000 * lots</td><td></td></tr>
   <tr><td>Stormwater Management (per lot)</td><td colspan="3">2,000 * lots</td><td></td></tr>
@@ -216,16 +324,15 @@ function recalculate() {
   <tr><td>Service Laterals (per lot)</td><td colspan="3">1,000 * lots</td><td></td></tr>
   <tr><td>Lot Grading/Finishing (per lot)</td><td colspan="3">500 * lots</td><td></td></tr>
   <tr><td>Common Amenities (Lump Sum)</td><td colspan="3">50,000</td><td></td></tr>
-  <tr><td>Landscaping (Lump Sum)</td><td colspan="3">25,000</td><td></td></tr>
+  <tr><td>Landscaping ($7,000/acre leftover)</td><td colspan="3">Calculated on leftover acres</td><td></td></tr>
   <tr class="subtotal"><td>Subtotal Lot Improvements</td><td colspan="3"><span id="lotImprovementsSubtotal"></span></td><td></td></tr>
 </table>
 
 <table>
-  <tr><th colspan="5">SOFT COSTS</th></tr>
-  <tr><td>Add’l Engineering/Consulting</td><td colspan="3">25,000</td><td>Oversight</td></tr>
-  <tr><td>Project Management</td><td colspan="3">20,000</td><td></td></tr>
+  <tr><th colspan="5">SOFT COSTS (No PM fee here)</th></tr>
+  <tr><td>Add’l Engineering/Consulting</td><td colspan="3">25,000</td><td></td></tr>
   <tr><td>Accounting/Legal Fees</td><td colspan="3">10,000</td><td></td></tr>
-  <tr><td>Insurance</td><td colspan="3">5,000</td><td>Builder’s risk</td></tr>
+  <tr><td>Insurance</td><td colspan="3">5,000</td><td></td></tr>
   <tr><td>Marketing/Sales</td><td colspan="3">15,000</td><td></td></tr>
   <tr class="subtotal"><td>Subtotal Soft Costs</td><td colspan="3"><span id="softCostsSubtotal"></span></td><td></td></tr>
 </table>
@@ -238,35 +345,37 @@ function recalculate() {
 </table>
 
 <table>
-  <tr><th colspan="5">FINANCING COSTS</th></tr>
-  <tr><td>Loan Interest</td><td colspan="3">100,000</td><td></td></tr>
-  <tr><td>Loan Fees & Closing</td><td colspan="3">10,000</td><td></td></tr>
-  <tr><td>Carrying Costs (Taxes, etc.)</td><td colspan="3">5,000</td><td></td></tr>
+  <tr><th colspan="5">FINANCING COSTS (Developed Scenario)</th></tr>
+  <tr><td>Financing</td><td colspan="3">Based on (Prime+2%) & months</td><td></td></tr>
   <tr class="subtotal"><td>Subtotal Financing</td><td colspan="3"><span id="financingSubtotal"></span></td><td></td></tr>
 </table>
 
 <table>
-  <tr><th colspan="5">TOTALS</th></tr>
+  <tr><th colspan="5">TOTALS (Developed Scenario)</th></tr>
   <tr><td>Total Project Cost</td><td colspan="3"><span id="totalProjectCost"></span></td><td></td></tr>
   <tr><td>Per-Lot Cost</td><td colspan="3"><span id="perLotCost"></span></td><td></td></tr>
 </table>
 
 <div class="section-title">Profit Calculations</div>
+<p class="notes">Showing Basis (Revenue), Costs, and Profits for Entitled and Developed Scenarios</p>
+
 <table>
-  <tr><th>Scenario</th><th>Profit</th><th>Notes</th></tr>
+  <tr><th>Scenario</th><th>Basis</th><th>Costs</th><th>Profit</th></tr>
   <tr>
     <td>Sell Entitled Land</td>
-    <td><span id="profitEntitled"></span></td>
-    <td>Assumes $8,000/lot minus land & entitlement costs</td>
+    <td><span id="entitledBasis"></span></td>
+    <td><span id="entitledCosts"></span></td>
+    <td><span id="entitledProfit"></span></td>
   </tr>
   <tr>
     <td>Sell Fully Developed Lots</td>
-    <td><span id="profitDeveloped"></span></td>
-    <td>Assumes $35,000/lot minus total project cost</td>
+    <td><span id="developedBasis"></span></td>
+    <td><span id="developedCosts"></span></td>
+    <td><span id="developedProfit"></span></td>
   </tr>
 </table>
 
-<p class="notes">Adjust values, formulas, and references as needed. This is a simplified example.</p>
+<p class="notes">Adjust values, formulas, and references as needed. This is a simplified approximation.</p>
 
 </body>
 </html>
