@@ -39,22 +39,23 @@
   }
 </style>
 <script>
+function formatNumber(num) {
+  return num.toLocaleString('en-US', {maximumFractionDigits:0});
+}
+
 function recalculate() {
   // Get input values
   const acres = parseFloat(document.getElementById('inputAcres').value) || 0;
   const usablePercent = parseFloat(document.getElementById('selectUsable').value) || 0;
   const lotsPerAcre = parseFloat(document.getElementById('inputLotsPerAcre').value) || 0;
+  const costPerAcre = parseFloat(document.getElementById('costPerAcre').value) || 0;
 
   // Calculate number of lots
   const totalLots = acres * usablePercent * lotsPerAcre;
-  document.getElementById('totalLots').textContent = totalLots.toFixed(0);
+  document.getElementById('totalLots').textContent = formatNumber(totalLots);
 
-  // Example calculations (Adjust as needed)
-  // Land Purchase
-  const landCostPerAcre = 7000;
-  const landPurchaseTotal = landCostPerAcre * acres;
-  document.getElementById('landPurchaseCost').textContent = landPurchaseTotal.toFixed(2);
-
+  // Land & Entitlement Costs
+  const landPurchaseTotal = costPerAcre * acres;
   const engineering = 25000;
   const surveying = 20000;
   const adminLegal = 30000;
@@ -62,23 +63,24 @@ function recalculate() {
   const geoTests = 5000;
 
   const landEntitlementSubtotal = landPurchaseTotal + engineering + surveying + adminLegal + environmental + geoTests;
-  document.getElementById('landEntitlementSubtotal').textContent = landEntitlementSubtotal.toFixed(2);
+  document.getElementById('landPurchaseCost').textContent = formatNumber(landPurchaseTotal);
+  document.getElementById('landEntitlementSubtotal').textContent = formatNumber(landEntitlementSubtotal);
 
   // Site Prep
   const clearingGrading = 40000;
   const erosionControl = 10000;
   const soilStabilization = 5000;
   const sitePrepSubtotal = clearingGrading + erosionControl + soilStabilization;
-  document.getElementById('sitePrepSubtotal').textContent = sitePrepSubtotal.toFixed(2);
+  document.getElementById('sitePrepSubtotal').textContent = formatNumber(sitePrepSubtotal);
 
-  // Roadway & Infrastructure (Adjust per-lot items)
-  const roadConstruction = 300 * 5280; // $300/lf * 5280 ft
+  // Roadway & Infrastructure
+  const roadConstruction = 300 * 5280;
   const lightingSignage = 50000;
   const waterSewer = 5000 * totalLots;
   const stormwater = 2000 * totalLots;
   const electricGas = 2000 * totalLots;
   const roadInfraSubtotal = roadConstruction + lightingSignage + waterSewer + stormwater + electricGas;
-  document.getElementById('roadInfraSubtotal').textContent = roadInfraSubtotal.toFixed(2);
+  document.getElementById('roadInfraSubtotal').textContent = formatNumber(roadInfraSubtotal);
 
   // Lot Improvements
   const serviceLaterals = 1000 * totalLots;
@@ -86,7 +88,7 @@ function recalculate() {
   const commonAmenities = 50000;
   const landscaping = 25000;
   const lotImprovementsSubtotal = serviceLaterals + lotGrading + commonAmenities + landscaping;
-  document.getElementById('lotImprovementsSubtotal').textContent = lotImprovementsSubtotal.toFixed(2);
+  document.getElementById('lotImprovementsSubtotal').textContent = formatNumber(lotImprovementsSubtotal);
 
   // Soft Costs
   const addlEng = 25000;
@@ -95,29 +97,44 @@ function recalculate() {
   const insurance = 5000;
   const marketing = 15000;
   const softCostsSubtotal = addlEng + projectMgmt + accountingLegal + insurance + marketing;
-  document.getElementById('softCostsSubtotal').textContent = softCostsSubtotal.toFixed(2);
+  document.getElementById('softCostsSubtotal').textContent = formatNumber(softCostsSubtotal);
 
-  // Contingency (Assume 10% of hard costs - adjust references as needed)
+  // Contingency (10% of Hard Costs)
   const hardCosts = landEntitlementSubtotal + sitePrepSubtotal + roadInfraSubtotal + lotImprovementsSubtotal;
   const contingency = hardCosts * 0.10;
   const ownerReserve = 50000;
   const contingencySubtotal = contingency + ownerReserve;
-  document.getElementById('contingencySubtotal').textContent = contingencySubtotal.toFixed(2);
+  document.getElementById('contingencySubtotal').textContent = formatNumber(contingencySubtotal);
 
   // Financing Costs
   const loanInterest = 100000;
   const loanFees = 10000;
   const carryingCosts = 5000;
   const financingSubtotal = loanInterest + loanFees + carryingCosts;
-  document.getElementById('financingSubtotal').textContent = financingSubtotal.toFixed(2);
+  document.getElementById('financingSubtotal').textContent = formatNumber(financingSubtotal);
 
   // Total Project Cost
   const totalProjectCost = hardCosts + softCostsSubtotal + contingencySubtotal + financingSubtotal;
-  document.getElementById('totalProjectCost').textContent = totalProjectCost.toFixed(2);
+  document.getElementById('totalProjectCost').textContent = formatNumber(totalProjectCost);
 
   // Per-Lot Cost
   const perLotCost = totalLots > 0 ? totalProjectCost / totalLots : 0;
-  document.getElementById('perLotCost').textContent = perLotCost.toFixed(2);
+  document.getElementById('perLotCost').textContent = formatNumber(perLotCost);
+
+  // Profit Calculations
+  // Assume Entitled Land Sell Price = $8,000 per lot
+  // Profit if Entitled: (RevenueEntitled - Entitlement Costs)
+  // RevenueEntitled = totalLots * 8000
+  const revenueEntitled = totalLots * 8000;
+  const profitEntitled = revenueEntitled - landEntitlementSubtotal;
+  document.getElementById('profitEntitled').textContent = formatNumber(profitEntitled);
+
+  // Assume Fully Developed Sell Price = $35,000 per lot
+  // Profit if Developed: (RevenueDeveloped - Total Project Cost)
+  // RevenueDeveloped = totalLots * 35000
+  const revenueDeveloped = totalLots * 35000;
+  const profitDeveloped = revenueDeveloped - totalProjectCost;
+  document.getElementById('profitDeveloped').textContent = formatNumber(profitDeveloped);
 }
 </script>
 </head>
@@ -131,6 +148,11 @@ function recalculate() {
     <th>Number of Acres</th>
     <td><input type="number" id="inputAcres" value="100" step="1" oninput="recalculate()" /></td>
     <td class="notes">Enter total acreage</td>
+  </tr>
+  <tr>
+    <th>Cost per Acre</th>
+    <td><input type="number" id="costPerAcre" value="7000" step="1" oninput="recalculate()" /></td>
+    <td class="notes">Enter cost per acre</td>
   </tr>
   <tr>
     <th>% Usable Acreage</th>
@@ -162,7 +184,7 @@ function recalculate() {
 
 <table>
   <tr><th colspan="5">LAND & ENTITLEMENT</th></tr>
-  <tr><td>Land Purchase</td><td colspan="3"><span id="landPurchaseCost"></span></td><td class="notes">Acres * $7,000</td></tr>
+  <tr><td>Land Purchase</td><td colspan="3"><span id="landPurchaseCost"></span></td><td class="notes">Acres * Cost/Acre</td></tr>
   <tr><td>Engineering</td><td colspan="3">25,000</td><td></td></tr>
   <tr><td>Surveying</td><td colspan="3">20,000</td><td></td></tr>
   <tr><td>Admin & Legal (Permits/Zoning)</td><td colspan="3">30,000</td><td></td></tr>
@@ -227,6 +249,21 @@ function recalculate() {
   <tr><th colspan="5">TOTALS</th></tr>
   <tr><td>Total Project Cost</td><td colspan="3"><span id="totalProjectCost"></span></td><td></td></tr>
   <tr><td>Per-Lot Cost</td><td colspan="3"><span id="perLotCost"></span></td><td></td></tr>
+</table>
+
+<div class="section-title">Profit Calculations</div>
+<table>
+  <tr><th>Scenario</th><th>Profit</th><th>Notes</th></tr>
+  <tr>
+    <td>Sell Entitled Land</td>
+    <td><span id="profitEntitled"></span></td>
+    <td>Assumes $8,000/lot minus land & entitlement costs</td>
+  </tr>
+  <tr>
+    <td>Sell Fully Developed Lots</td>
+    <td><span id="profitDeveloped"></span></td>
+    <td>Assumes $35,000/lot minus total project cost</td>
+  </tr>
 </table>
 
 <p class="notes">Adjust values, formulas, and references as needed. This is a simplified example.</p>
