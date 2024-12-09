@@ -64,10 +64,11 @@ function recalculate() {
   const difficulty = document.getElementById('gradingDifficulty').value;
   const primeRate = parseFloat(document.getElementById('primeRate').value) || 0;
   const carryingMonths = parseFloat(document.getElementById('carryingMonths').value) || 12;
+  const targetMargin = parseFloat(document.getElementById('targetMargin').value) || 30;
 
   const totalLots = acres * usablePercent * lotsPerAcre;
 
-  // Scenario Revenues
+  // Scenario Purchase Prices
   const entitledRevenue = totalLots * entitledLotPrice;
   const developedRevenue = totalLots * developedLotPrice;
 
@@ -93,7 +94,7 @@ function recalculate() {
   const wellFeesTotal = wellFee * totalLots;
   const septicFeesTotal = septicFee * totalLots;
 
-  // Site Prep (only for developed scenario)
+  // Site Prep (developed scenario)
   const sitePrepDeveloped = clearingGrading + erosionControl + tapFeesTotal + wellFeesTotal + septicFeesTotal;
 
   // Road & Infrastructure (developed scenario)
@@ -112,14 +113,11 @@ function recalculate() {
   const commonAmenities = 50000;
   const lotImprovementsDeveloped = serviceLaterals + lotGradingFinish + commonAmenities + landscaping;
 
-  // Soft Costs (developed scenario only)
+  // Soft Costs (developed scenario)
   const addlEng = 25000;
   const accountingLegal = 10000;
   const insurance = 5000;
-  // Marketing now 6% of final sales price (applied to both scenarios, calculated later)
-  // Project Management 5% (developed scenario only, calculated later)
   const softCostsBase = addlEng + accountingLegal + insurance; 
-  // Note: We'll add marketing and PM after we know revenues.
 
   // Hard costs (developed scenario)
   const hardCostsDeveloped = landEntitlementSubtotal + sitePrepDeveloped + roadInfraDeveloped + lotImprovementsDeveloped;
@@ -133,7 +131,7 @@ function recalculate() {
   const baseCostNoPMNoMktNoFin = hardCostsDeveloped + softCostsBase + contingencySubtotal;
 
   // Project Management & Marketing
-  // PM: 5% of developedRevenue, 0% for entitled
+  // PM: 5% of developedRevenue, 0 for entitled
   const pmEntitled = 0;
   const pmDeveloped = developedRevenue * 0.05;
 
@@ -142,13 +140,10 @@ function recalculate() {
   const marketingDeveloped = developedRevenue * 0.06;
 
   // Financing (developed scenario)
-  // Financing = (baseCostNoPMNoMktNoFin + PM + (no marketing because finance presumably before selling? 
-  // The instructions don’t specify order. Let’s assume financing is calculated before marketing since marketing cost occurs at sale.
-  // We'll include marketing in total cost after finance. The user hasn't clarified order of operations. We'll assume financing does not depend on marketing cost.
   const financingSubtotal = (baseCostNoPMNoMktNoFin + pmDeveloped) * ((primeRate + 2)/100) * (carryingMonths / 12);
 
   // Total Costs
-  // Entitled scenario: Only landEntitlementSubtotal + marketing
+  // Entitled scenario: landEntitlementSubtotal + marketing
   const totalEntitledCost = landEntitlementSubtotal + marketingEntitled; 
   const entitledProfit = entitledRevenue - totalEntitledCost;
   const entitledMargin = entitledProfit / totalEntitledCost;
@@ -158,22 +153,20 @@ function recalculate() {
   const developedProfit = developedRevenue - totalDevelopedCost;
   const developedMargin = developedProfit / totalDevelopedCost;
 
-  // Recommended Prices if <30% margin
+  // Recommended Prices if < selected margin
   let recommendedEntitledPrice = 0;
-  if (entitledMargin < 0.3) {
-    // final price needed = totalEntitledCost * 1.3
-    // recommended lot price = (totalEntitledCost * 1.3) / totalLots
-    recommendedEntitledPrice = (totalEntitledCost * 1.3) / (totalLots||1);
+  if (entitledMargin < (targetMargin/100)) {
+    // final price needed = totalEntitledCost * (1 + targetMargin%)
+    // recommended lot price = (totalEntitledCost * (1 + targetMargin%)) / totalLots
+    recommendedEntitledPrice = (totalEntitledCost * (1+(targetMargin/100))) / (totalLots||1);
   }
 
   let recommendedDevelopedPrice = 0;
-  if (developedMargin < 0.3) {
-    recommendedDevelopedPrice = (totalDevelopedCost * 1.3) / (totalLots||1);
+  if (developedMargin < (targetMargin/100)) {
+    recommendedDevelopedPrice = (totalDevelopedCost * (1+(targetMargin/100))) / (totalLots||1);
   }
 
   // Update displayed values
-
-  // Update total lots
   document.getElementById('totalLots').textContent = formatNumber(totalLots);
 
   // Land & Entitlement
@@ -187,7 +180,6 @@ function recalculate() {
   document.getElementById('landEntSubtotalDev').textContent = formatNumber(landEntitlementSubtotal);
 
   // Site Prep
-  // Entitled scenario: no development => 0
   document.getElementById('clearingGradingEnt').textContent = formatNumber(0);
   document.getElementById('clearingGradingDev').textContent = formatNumber(clearingGrading);
 
@@ -244,7 +236,7 @@ function recalculate() {
   document.getElementById('lotImpEntSubtotal').textContent = formatNumber(lotImpEnt);
   document.getElementById('lotImpDevSubtotal').textContent = formatNumber(lotImprovementsDeveloped);
 
-  // Soft Costs (excluding marketing and PM)
+  // Soft Costs
   document.getElementById('addlEngEnt').textContent = formatNumber(0);
   document.getElementById('addlEngDev').textContent = formatNumber(addlEng);
 
@@ -254,7 +246,6 @@ function recalculate() {
   document.getElementById('insuranceEnt').textContent = formatNumber(0);
   document.getElementById('insuranceDev').textContent = formatNumber(insurance);
 
-  // Marketing & PM handled below
   const softCostsEnt = 0;
   document.getElementById('softCostsEntSubtotal').textContent = formatNumber(softCostsEnt);
   document.getElementById('softCostsDevSubtotal').textContent = formatNumber(softCostsBase);
@@ -274,11 +265,10 @@ function recalculate() {
   document.getElementById('financingEnt').textContent = formatNumber(0);
   document.getElementById('financingDev').textContent = formatNumber(financingSubtotal);
 
-  // Project Management
+  // PM & Marketing
   document.getElementById('pmEnt').textContent = formatNumber(pmEntitled);
   document.getElementById('pmDev').textContent = formatNumber(pmDeveloped);
 
-  // Marketing
   document.getElementById('marketingEnt').textContent = formatNumber(marketingEntitled);
   document.getElementById('marketingDev').textContent = formatNumber(marketingDeveloped);
 
@@ -289,7 +279,7 @@ function recalculate() {
   const perLotDev = (totalLots>0)?totalDevelopedCost/totalLots:0;
   document.getElementById('perLotCostDev').textContent = formatNumber(perLotDev);
 
-  // Profits & recommended prices
+  // Profits
   document.getElementById('entitledBasis').textContent = formatNumber(entitledRevenue);
   document.getElementById('entitledCosts').textContent = formatNumber(totalEntitledCost);
   document.getElementById('entitledProfit').textContent = formatNumber(entitledProfit);
@@ -298,7 +288,7 @@ function recalculate() {
   document.getElementById('developedCosts').textContent = formatNumber(totalDevelopedCost);
   document.getElementById('developedProfit').textContent = formatNumber(developedProfit);
 
-  // Recommended prices if <30% margin
+  // Recommended prices based on chosen margin
   const recEnt = (recommendedEntitledPrice>0)?recommendedEntitledPrice:0;
   const recDev = (recommendedDevelopedPrice>0)?recommendedDevelopedPrice:0;
   document.getElementById('recEntPrice').textContent = (recEnt>0) ? formatNumber(Math.round(recEnt)) : 'N/A';
@@ -372,17 +362,17 @@ function recalculate() {
   <tr>
     <td>Sewer & Water Tap Fee (per lot)</td>
     <td colspan="2"><input type="number" id="tapFee" value="2000" step="100" oninput="recalculate()"></td>
-    <td class="notes">Added to site prep (developed)</td>
+    <td class="notes">Added to site prep (dev)</td>
   </tr>
   <tr>
     <td>Well Fee (per lot)</td>
     <td colspan="2"><input type="number" id="wellFee" value="3000" step="100" oninput="recalculate()"></td>
-    <td class="notes">Added to site prep (developed)</td>
+    <td class="notes">Added to site prep (dev)</td>
   </tr>
   <tr>
     <td>Septic Fee (per lot)</td>
     <td colspan="2"><input type="number" id="septicFee" value="4000" step="100" oninput="recalculate()"></td>
-    <td class="notes">Added to site prep (developed)</td>
+    <td class="notes">Added to site prep (dev)</td>
   </tr>
   <tr>
     <td>Prime Rate (%)</td>
@@ -420,37 +410,37 @@ function recalculate() {
     <td>Land Purchase</td>
     <td id="landPurchaseCost"></td>
     <td id="landPurchaseCostDev"></td>
-    <td class="notes">Acres * Cost/Acre (Same for both scenarios)</td>
+    <td class="notes">Acres * Cost/Acre (same for both)</td>
   </tr>
   <tr>
     <td>Engineering</td>
     <td id="engineering"></td>
     <td id="engineeringDev"></td>
-    <td class="notes">Fixed fee</td>
+    <td class="notes">25,000 fixed</td>
   </tr>
   <tr>
     <td>Surveying</td>
     <td id="surveying"></td>
     <td id="surveyingDev"></td>
-    <td class="notes">Fixed fee</td>
+    <td class="notes">20,000 fixed</td>
   </tr>
   <tr>
     <td>Admin & Legal</td>
     <td id="adminLegal"></td>
     <td id="adminLegalDev"></td>
-    <td class="notes">Permits, zoning</td>
+    <td class="notes">30,000 fixed</td>
   </tr>
   <tr>
     <td>Environmental Studies</td>
     <td id="environmental"></td>
     <td id="environmentalDev"></td>
-    <td class="notes">Site analysis</td>
+    <td class="notes">5,000 fixed</td>
   </tr>
   <tr>
     <td>Soil/Geotech Tests</td>
     <td id="geoTests"></td>
     <td id="geoTestsDev"></td>
-    <td class="notes">Soil capacity</td>
+    <td class="notes">5,000 fixed</td>
   </tr>
   <tr class="subtotal">
     <td>Subtotal Land & Entitlement</td>
@@ -473,7 +463,7 @@ function recalculate() {
     <td>Clearing & Grading</td>
     <td id="clearingGradingEnt"></td>
     <td id="clearingGradingDev"></td>
-    <td class="notes">Cost/acre based on difficulty</td>
+    <td class="notes">Cost/acre by difficulty</td>
   </tr>
   <tr>
     <td>Erosion Control & Stabilization</td>
@@ -485,19 +475,19 @@ function recalculate() {
     <td>Sewer & Water Tap Fees</td>
     <td id="tapFeeEnt"></td>
     <td id="tapFeeDev"></td>
-    <td class="notes">Tap Fee * Lots (dev only)</td>
+    <td class="notes">Tap Fee * Lots (dev)</td>
   </tr>
   <tr>
     <td>Well Fee</td>
     <td id="wellFeeEnt"></td>
     <td id="wellFeeDev"></td>
-    <td class="notes">Well Fee * Lots (dev only)</td>
+    <td class="notes">Well Fee * Lots (dev)</td>
   </tr>
   <tr>
     <td>Septic Fee</td>
     <td id="septicFeeEnt"></td>
     <td id="septicFeeDev"></td>
-    <td class="notes">Septic Fee * Lots (dev only)</td>
+    <td class="notes">Septic Fee * Lots (dev)</td>
   </tr>
   <tr class="subtotal">
     <td>Subtotal Site Prep</td>
@@ -520,31 +510,31 @@ function recalculate() {
     <td>Road Construction</td>
     <td id="roadConstEnt"></td>
     <td id="roadConstDev"></td>
-    <td class="notes">300/ft * 5280 ft (dev only)</td>
+    <td class="notes">300/ft * 5280 ft (dev)</td>
   </tr>
   <tr>
     <td>Street Lighting/Signage</td>
     <td id="lightingEnt"></td>
     <td id="lightingDev"></td>
-    <td class="notes">50,000 fixed (dev only)</td>
+    <td class="notes">50,000 fixed (dev)</td>
   </tr>
   <tr>
     <td>Water & Sewer Mains</td>
     <td id="waterSewerEnt"></td>
     <td id="waterSewerDev"></td>
-    <td class="notes">5,000 * lots (dev only)</td>
+    <td class="notes">5,000 * lots (dev)</td>
   </tr>
   <tr>
     <td>Stormwater Management</td>
     <td id="stormwaterEnt"></td>
     <td id="stormwaterDev"></td>
-    <td class="notes">2,000 * lots (dev only)</td>
+    <td class="notes">2,000 * lots (dev)</td>
   </tr>
   <tr>
     <td>Electric/Gas/Telecom</td>
     <td id="electricGasEnt"></td>
     <td id="electricGasDev"></td>
-    <td class="notes">2,000 * lots (dev only)</td>
+    <td class="notes">2,000 * lots (dev)</td>
   </tr>
   <tr class="subtotal">
     <td>Subtotal Road & Infra</td>
@@ -567,25 +557,25 @@ function recalculate() {
     <td>Service Laterals</td>
     <td id="serviceLateralsEnt"></td>
     <td id="serviceLateralsDev"></td>
-    <td class="notes">1,000 * lots (dev only)</td>
+    <td class="notes">1,000 * lots (dev)</td>
   </tr>
   <tr>
     <td>Lot Grading/Finishing</td>
     <td id="lotGradingFinishEnt"></td>
     <td id="lotGradingFinishDev"></td>
-    <td class="notes">500 * lots (dev only)</td>
+    <td class="notes">500 * lots (dev)</td>
   </tr>
   <tr>
     <td>Common Amenities</td>
     <td id="amenitiesEnt"></td>
     <td id="amenitiesDev"></td>
-    <td class="notes">50,000 fixed (dev only)</td>
+    <td class="notes">50,000 fixed (dev)</td>
   </tr>
   <tr>
     <td>Landscaping</td>
     <td id="landscapingEnt"></td>
     <td id="landscapingDev"></td>
-    <td class="notes">7,000 * leftover acres (dev only)</td>
+    <td class="notes">7,000 * leftover acres (dev)</td>
   </tr>
   <tr class="subtotal">
     <td>Subtotal Lot Improvements</td>
@@ -649,13 +639,13 @@ function recalculate() {
     <td>Owner Reserve</td>
     <td id="ownerReserveEnt"></td>
     <td id="ownerReserveDev"></td>
-    <td class="notes">Fixed 50,000 (dev only)</td>
+    <td class="notes">50,000 fixed (dev only)</td>
   </tr>
   <tr class="subtotal">
     <td>Subtotal Contingency</td>
     <td id="contEntSubtotal"></td>
     <td id="contDevSubtotal"></td>
-    <td class="notes">Sum of above (dev only)</td>
+    <td class="notes">Sum of above (dev)</td>
   </tr>
 </table>
 
@@ -712,7 +702,7 @@ function recalculate() {
     <td>Total Project Cost</td>
     <td id="totalEntitledCost"></td>
     <td id="totalDevelopedCost"></td>
-    <td class="notes">Sum all applicable costs per scenario</td>
+    <td class="notes">Sum all costs per scenario</td>
   </tr>
   <tr>
     <td>Per-Lot Cost (Developed only)</td>
@@ -723,12 +713,24 @@ function recalculate() {
 </table>
 
 <div class="section-title">Profit Calculations</div>
-<p class="notes">Showing Basis (Revenue), Costs, and Profit for Entitled and Developed Scenarios</p>
+<p class="notes">Select desired gross profit margin target:</p>
+<select id="targetMargin" onchange="recalculate()">
+  <option value="5">5%</option>
+  <option value="10">10%</option>
+  <option value="15">15%</option>
+  <option value="20">20%</option>
+  <option value="25">25%</option>
+  <option value="30" selected>30%</option>
+  <option value="35">35%</option>
+  <option value="40">40%</option>
+</select>
+
+<p class="notes">Showing Purchase Price, Costs, and Profit for Entitled and Developed Scenarios</p>
 <table>
   <colgroup><col><col><col><col></colgroup>
   <tr>
     <th>Scenario</th>
-    <th>Basis (Revenue)</th>
+    <th>Purchase Price</th>
     <th>Costs</th>
     <th>Profit</th>
   </tr>
@@ -746,12 +748,12 @@ function recalculate() {
   </tr>
 </table>
 
-<p class="notes"><b>If profit is less than 30%, recommended lot prices to achieve 30% profit:</b></p>
+<p class="notes"><b>If profit is less than selected margin, recommended lot prices to achieve that profit margin:</b></p>
 <table>
   <colgroup><col><col><col><col></colgroup>
   <tr>
     <th>Scenario</th>
-    <th>Recommended Lot Price for 30% Profit</th>
+    <th>Recommended Lot Price</th>
     <th colspan="2"></th>
   </tr>
   <tr>
@@ -766,7 +768,7 @@ function recalculate() {
   </tr>
 </table>
 
-<p class="notes">Adjust values, formulas, and references as needed. Update the prime rate daily to reflect current WSJ prime rate.</p>
+<p class="notes">Adjust values, formulas, and references as needed. Update the prime rate daily.</p>
 
 </body>
 </html>
