@@ -64,7 +64,9 @@ function recalculate() {
   const difficulty = document.getElementById('gradingDifficulty').value;
   const primeRate = parseFloat(document.getElementById('primeRate').value) || 0;
   const carryingMonths = parseFloat(document.getElementById('carryingMonths').value) || 12;
-  const targetMargin = parseFloat(document.getElementById('targetMargin').value) || 30;
+  // The targetMargin variable is still referenced in code, but no dropdown now.
+  // Set targetMargin to a default value if needed.
+  const targetMargin = 30;
 
   const totalLots = acres * usablePercent * lotsPerAcre;
 
@@ -702,21 +704,7 @@ function recalculate() {
   </tr>
 </table>
 
-<div class="section-title">Profit Calculations</div>
-<p class="notes">Select desired gross profit margin target:</p>
-<select id="targetMargin" onchange="recalculate()">
-  <option value="5">5%</option>
-  <option value="10">10%</option>
-  <option value="15">15%</option>
-  <option value="20">20%</option>
-  <option value="25">25%</option>
-  <option value="30" selected>30%</option>
-  <option value="35">35%</option>
-  <option value="40">40%</option>
-</select>
-
-<p class="notes">Purchase Price now represents the land cost, Costs are all other incurred costs (Purchase Price + Other Costs = Total Costs), and Profit is revenue minus total costs. Profit Margin = Profit / Total Costs.</p>
-
+<!-- Profit table without margin selection and notes above -->
 <table>
   <colgroup><col><col><col><col><col></colgroup>
   <tr>
