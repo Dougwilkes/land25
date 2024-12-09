@@ -73,4 +73,150 @@ function recalculate() {
   const developedRevenue = totalLots * developedLotPrice;
 
   // Land & Entitlement
-  const landPurchaseTotal = costPerAcre * acre
+  const landPurchaseTotal = costPerAcre * acres;
+  const engineering = 25000;
+  const surveying = 20000;
+  const adminLegal = 30000;
+  const environmental = 5000;
+  const geoTests = 5000;
+  const landEntitlementSubtotal = landPurchaseTotal + engineering + surveying + adminLegal + environmental + geoTests;
+
+  // Grading costs per difficulty
+  let gradingCostPerAcre = (difficulty === 'easy') ? 13000 : (difficulty === 'normal' ? 27500 : 55000);
+  const clearingGrading = gradingCostPerAcre * acres;
+
+  // Erosion control per difficulty
+  let erosionCostPerAcre = (difficulty === 'easy') ? 4000 : (difficulty === 'normal' ? 5000 : 9500);
+  const erosionControl = erosionCostPerAcre * acres;
+
+  // Tap, well, septic fees (per lot)
+  const tapFeesTotal = tapFee * totalLots;
+  const wellFeesTotal = wellFee * totalLots;
+  const septicFeesTotal = septicFee * totalLots;
+
+  // Site Prep (developed scenario)
+  const sitePrepDeveloped = clearingGrading + erosionControl + tapFeesTotal + wellFeesTotal + septicFeesTotal;
+
+  // Road & Infrastructure (developed scenario)
+  const roadConstruction = 300 * 5280;
+  const lightingSignage = 50000;
+
+  // If tap fee is 0, set waterSewer to 0, otherwise 5,000 * totalLots
+  let waterSewer = (tapFeesTotal === 0) ? 0 : (5000 * totalLots);
+
+  const stormwater = 2000 * totalLots;
+  const electricGas = 2000 * totalLots;
+  const roadInfraDeveloped = roadConstruction + lightingSignage + waterSewer + stormwater + electricGas;
+
+  // Lot Improvements (developed scenario)
+  const leftoverAcres = acres * (1 - usablePercent);
+  const landscaping = leftoverAcres * 7000;
+  const serviceLaterals = 1000 * totalLots;
+  const lotGradingFinish = 500 * totalLots;
+  const commonAmenities = 50000;
+  const lotImprovementsDeveloped = serviceLaterals + lotGradingFinish + commonAmenities + landscaping;
+
+  // Soft Costs (developed scenario)
+  const addlEng = 25000;
+  const accountingLegal = 10000;
+  const insurance = 5000;
+  const softCostsBase = addlEng + accountingLegal + insurance; 
+
+  // Hard costs (developed scenario)
+  const hardCostsDeveloped = landEntitlementSubtotal + sitePrepDeveloped + roadInfraDeveloped + lotImprovementsDeveloped;
+
+  // Contingency & Reserves (developed scenario)
+  const contingency = hardCostsDeveloped * 0.10;
+  const ownerReserve = 50000;
+  const contingencySubtotal = contingency + ownerReserve;
+
+  // Base cost before PM, marketing, financing (developed scenario)
+  const baseCostNoPMNoMktNoFin = hardCostsDeveloped + softCostsBase + contingencySubtotal;
+
+  // Project Management & Marketing
+  const pmEntitled = 0;
+  const pmDeveloped = developedRevenue * 0.05;
+  const marketingEntitled = entitledRevenue * 0.06;
+  const marketingDeveloped = developedRevenue * 0.06;
+
+  // Financing (developed scenario)
+  const financingSubtotal = (baseCostNoPMNoMktNoFin + pmDeveloped) * ((primeRate + 2)/100) * (carryingMonths / 12);
+
+  // Total Costs
+  const totalEntitledCost = landEntitlementSubtotal + marketingEntitled;
+  const entitledProfit = entitledRevenue - totalEntitledCost;
+  const entitledMargin = (totalEntitledCost > 0) ? (entitledProfit / totalEntitledCost) : 0;
+
+  const totalDevelopedCost = baseCostNoPMNoMktNoFin + pmDeveloped + financingSubtotal + marketingDeveloped;
+  const developedProfit = developedRevenue - totalDevelopedCost;
+  const developedMargin = (totalDevelopedCost > 0) ? (developedProfit / totalDevelopedCost) : 0;
+
+  const entitledLandOnly = landPurchaseTotal;
+  const entitledOtherCosts = totalEntitledCost - landPurchaseTotal;
+
+  const developedLandOnly = landPurchaseTotal;
+  const developedOtherCosts = totalDevelopedCost - landPurchaseTotal;
+
+  document.getElementById('totalLots').textContent = formatNumber(totalLots);
+
+  // Update scenario table with 6 columns: scenario, purchase price(land), costs, sales price, profit, profit margin
+  document.getElementById('entitledLandCost').textContent = formatNumber(entitledLandOnly);
+  document.getElementById('entitledOtherCosts').textContent = formatNumber(entitledOtherCosts);
+  document.getElementById('entitledSalesPrice').textContent = formatNumber(entitledLotPrice);
+  document.getElementById('entitledProfit').textContent = formatNumber(entitledProfit);
+  document.getElementById('entitledMargin').textContent = (entitledMargin * 100).toFixed(2) + '%';
+
+  document.getElementById('developedLandCost').textContent = formatNumber(developedLandOnly);
+  document.getElementById('developedOtherCosts').textContent = formatNumber(developedOtherCosts);
+  document.getElementById('developedSalesPrice').textContent = formatNumber(developedLotPrice);
+  document.getElementById('developedProfit').textContent = formatNumber(developedProfit);
+  document.getElementById('developedMargin').textContent = (developedMargin * 100).toFixed(2) + '%';
+}
+</script>
+</head>
+<body onload="recalculate()">
+
+<h1>Subdivision Development Proforma</h1>
+
+<div class="section-title">Inputs</div>
+<table>
+  <colgroup><col><col><col><col></colgroup>
+  <!-- Inputs Table Code -->
+  ...
+</table>
+
+<!-- All other cost tables remain unchanged -->
+
+<!-- Scenario table with 6 columns -->
+<table>
+  <colgroup><col><col><col><col><col><col></colgroup>
+  <tr>
+    <th>Scenario</th>
+    <th>Purchase Price (Land)</th>
+    <th>Costs</th>
+    <th>Sales Price to Builder</th>
+    <th>Profit</th>
+    <th>Profit Margin</th>
+  </tr>
+  <tr>
+    <td>Sell Entitled Land</td>
+    <td id="entitledLandCost"></td>
+    <td id="entitledOtherCosts"></td>
+    <td id="entitledSalesPrice"></td>
+    <td id="entitledProfit"></td>
+    <td id="entitledMargin"></td>
+  </tr>
+  <tr>
+    <td>Sell Fully Developed Lots</td>
+    <td id="developedLandCost"></td>
+    <td id="developedOtherCosts"></td>
+    <td id="developedSalesPrice"></td>
+    <td id="developedProfit"></td>
+    <td id="developedMargin"></td>
+  </tr>
+</table>
+
+<p class="notes">Adjust values, formulas, and references as needed. Update the prime rate daily.</p>
+
+</body>
+</html>
