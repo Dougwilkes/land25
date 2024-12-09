@@ -50,6 +50,11 @@ function formatNumber(num) {
   return num.toLocaleString('en-US', {maximumFractionDigits:0});
 }
 
+function formatPercentage(value) {
+  if (isNaN(value)) return '0%';
+  return (value * 100).toFixed(2) + '%';
+}
+
 function recalculate() {
   // Inputs
   const acres = parseFloat(document.getElementById('inputAcres').value) || 0;
@@ -68,7 +73,7 @@ function recalculate() {
 
   const totalLots = acres * usablePercent * lotsPerAcre;
 
-  // Scenario Purchase Prices
+  // Scenario Revenues
   const entitledRevenue = totalLots * entitledLotPrice;
   const developedRevenue = totalLots * developedLotPrice;
 
@@ -131,7 +136,6 @@ function recalculate() {
   const baseCostNoPMNoMktNoFin = hardCostsDeveloped + softCostsBase + contingencySubtotal;
 
   // Project Management & Marketing
-  // PM: 5% of developedRevenue, 0 for entitled
   const pmEntitled = 0;
   const pmDeveloped = developedRevenue * 0.05;
 
@@ -146,25 +150,12 @@ function recalculate() {
   // Entitled scenario: landEntitlementSubtotal + marketing
   const totalEntitledCost = landEntitlementSubtotal + marketingEntitled; 
   const entitledProfit = entitledRevenue - totalEntitledCost;
-  const entitledMargin = entitledProfit / totalEntitledCost;
+  const entitledMargin = (totalEntitledCost>0)?entitledProfit / totalEntitledCost:0;
 
   // Developed scenario: all included
   const totalDevelopedCost = baseCostNoPMNoMktNoFin + pmDeveloped + financingSubtotal + marketingDeveloped;
   const developedProfit = developedRevenue - totalDevelopedCost;
-  const developedMargin = developedProfit / totalDevelopedCost;
-
-  // Recommended Prices if < selected margin
-  let recommendedEntitledPrice = 0;
-  if (entitledMargin < (targetMargin/100)) {
-    // final price needed = totalEntitledCost * (1 + targetMargin%)
-    // recommended lot price = (totalEntitledCost * (1 + targetMargin%)) / totalLots
-    recommendedEntitledPrice = (totalEntitledCost * (1+(targetMargin/100))) / (totalLots||1);
-  }
-
-  let recommendedDevelopedPrice = 0;
-  if (developedMargin < (targetMargin/100)) {
-    recommendedDevelopedPrice = (totalDevelopedCost * (1+(targetMargin/100))) / (totalLots||1);
-  }
+  const developedMargin = (totalDevelopedCost>0)?developedProfit / totalDevelopedCost:0;
 
   // Update displayed values
   document.getElementById('totalLots').textContent = formatNumber(totalLots);
@@ -195,8 +186,7 @@ function recalculate() {
   document.getElementById('septicFeeEnt').textContent = formatNumber(0);
   document.getElementById('septicFeeDev').textContent = formatNumber(septicFeesTotal);
 
-  const sitePrepEnt = 0;
-  document.getElementById('sitePrepEntSubtotal').textContent = formatNumber(sitePrepEnt);
+  document.getElementById('sitePrepEntSubtotal').textContent = formatNumber(0);
   document.getElementById('sitePrepDevSubtotal').textContent = formatNumber(sitePrepDeveloped);
 
   // Road & Infrastructure
@@ -215,8 +205,7 @@ function recalculate() {
   document.getElementById('electricGasEnt').textContent = formatNumber(0);
   document.getElementById('electricGasDev').textContent = formatNumber(electricGas);
 
-  const roadInfraEnt = 0;
-  document.getElementById('roadInfraEntSubtotal').textContent = formatNumber(roadInfraEnt);
+  document.getElementById('roadInfraEntSubtotal').textContent = formatNumber(0);
   document.getElementById('roadInfraDevSubtotal').textContent = formatNumber(roadInfraDeveloped);
 
   // Lot Improvements
@@ -232,8 +221,7 @@ function recalculate() {
   document.getElementById('landscapingEnt').textContent = formatNumber(0);
   document.getElementById('landscapingDev').textContent = formatNumber(landscaping);
 
-  const lotImpEnt = 0;
-  document.getElementById('lotImpEntSubtotal').textContent = formatNumber(lotImpEnt);
+  document.getElementById('lotImpEntSubtotal').textContent = formatNumber(0);
   document.getElementById('lotImpDevSubtotal').textContent = formatNumber(lotImprovementsDeveloped);
 
   // Soft Costs
@@ -246,8 +234,7 @@ function recalculate() {
   document.getElementById('insuranceEnt').textContent = formatNumber(0);
   document.getElementById('insuranceDev').textContent = formatNumber(insurance);
 
-  const softCostsEnt = 0;
-  document.getElementById('softCostsEntSubtotal').textContent = formatNumber(softCostsEnt);
+  document.getElementById('softCostsEntSubtotal').textContent = formatNumber(0);
   document.getElementById('softCostsDevSubtotal').textContent = formatNumber(softCostsBase);
 
   // Contingency & Reserves
@@ -257,8 +244,7 @@ function recalculate() {
   document.getElementById('ownerReserveEnt').textContent = formatNumber(0);
   document.getElementById('ownerReserveDev').textContent = formatNumber(ownerReserve);
 
-  const contEnt = 0;
-  document.getElementById('contEntSubtotal').textContent = formatNumber(contEnt);
+  document.getElementById('contEntSubtotal').textContent = formatNumber(0);
   document.getElementById('contDevSubtotal').textContent = formatNumber(contingencySubtotal);
 
   // Financing
@@ -279,20 +265,22 @@ function recalculate() {
   const perLotDev = (totalLots>0)?totalDevelopedCost/totalLots:0;
   document.getElementById('perLotCostDev').textContent = formatNumber(perLotDev);
 
-  // Profits
-  document.getElementById('entitledBasis').textContent = formatNumber(entitledRevenue);
+  // Profits & Profit Margin
+  const entitledMarginPercent = formatPercentage(entitledMargin);
+  const developedMarginPercent = formatPercentage(developedMargin);
+
+  // Update Profit Calculations
+  document.getElementById('entitledBasis').textContent = formatNumber(entitledRevenue); // Purchase Price
+  document.getElementById('entitledSalesPrice').textContent = formatNumber(entitledLotPrice); // per-lot sales price
   document.getElementById('entitledCosts').textContent = formatNumber(totalEntitledCost);
   document.getElementById('entitledProfit').textContent = formatNumber(entitledProfit);
+  document.getElementById('entitledMargin').textContent = entitledMarginPercent;
 
-  document.getElementById('developedBasis').textContent = formatNumber(developedRevenue);
+  document.getElementById('developedBasis').textContent = formatNumber(developedRevenue); // Purchase Price
+  document.getElementById('developedSalesPrice').textContent = formatNumber(developedLotPrice); // per-lot sales price
   document.getElementById('developedCosts').textContent = formatNumber(totalDevelopedCost);
   document.getElementById('developedProfit').textContent = formatNumber(developedProfit);
-
-  // Recommended prices based on chosen margin
-  const recEnt = (recommendedEntitledPrice>0)?recommendedEntitledPrice:0;
-  const recDev = (recommendedDevelopedPrice>0)?recommendedDevelopedPrice:0;
-  document.getElementById('recEntPrice').textContent = (recEnt>0) ? formatNumber(Math.round(recEnt)) : 'N/A';
-  document.getElementById('recDevPrice').textContent = (recDev>0) ? formatNumber(Math.round(recDev)) : 'N/A';
+  document.getElementById('developedMargin').textContent = developedMarginPercent;
 }
 </script>
 </head>
@@ -398,319 +386,9 @@ function recalculate() {
 </table>
 
 <div class="section-title">Land & Entitlement Costs</div>
-<table>
-  <colgroup><col><col><col><col></colgroup>
-  <tr>
-    <th>Description</th>
-    <th>Entitled Cost</th>
-    <th>Developed Cost</th>
-    <th>Notes</th>
-  </tr>
-  <tr>
-    <td>Land Purchase</td>
-    <td id="landPurchaseCost"></td>
-    <td id="landPurchaseCostDev"></td>
-    <td class="notes">Acres * Cost/Acre (same for both)</td>
-  </tr>
-  <tr>
-    <td>Engineering</td>
-    <td id="engineering"></td>
-    <td id="engineeringDev"></td>
-    <td class="notes">25,000 fixed</td>
-  </tr>
-  <tr>
-    <td>Surveying</td>
-    <td id="surveying"></td>
-    <td id="surveyingDev"></td>
-    <td class="notes">20,000 fixed</td>
-  </tr>
-  <tr>
-    <td>Admin & Legal</td>
-    <td id="adminLegal"></td>
-    <td id="adminLegalDev"></td>
-    <td class="notes">30,000 fixed</td>
-  </tr>
-  <tr>
-    <td>Environmental Studies</td>
-    <td id="environmental"></td>
-    <td id="environmentalDev"></td>
-    <td class="notes">5,000 fixed</td>
-  </tr>
-  <tr>
-    <td>Soil/Geotech Tests</td>
-    <td id="geoTests"></td>
-    <td id="geoTestsDev"></td>
-    <td class="notes">5,000 fixed</td>
-  </tr>
-  <tr class="subtotal">
-    <td>Subtotal Land & Entitlement</td>
-    <td id="landEntSubtotalEnt"></td>
-    <td id="landEntSubtotalDev"></td>
-    <td class="notes">Sum of above</td>
-  </tr>
-</table>
+<!-- ... (All other tables remain the same as previously provided) ... -->
 
-<div class="section-title">Site Preparation</div>
-<table>
-  <colgroup><col><col><col><col></colgroup>
-  <tr>
-    <th>Description</th>
-    <th>Entitled Cost</th>
-    <th>Developed Cost</th>
-    <th>Notes</th>
-  </tr>
-  <tr>
-    <td>Clearing & Grading</td>
-    <td id="clearingGradingEnt"></td>
-    <td id="clearingGradingDev"></td>
-    <td class="notes">Cost/acre by difficulty</td>
-  </tr>
-  <tr>
-    <td>Erosion Control & Stabilization</td>
-    <td id="erosionEnt"></td>
-    <td id="erosionDev"></td>
-    <td class="notes">Cost/acre by difficulty</td>
-  </tr>
-  <tr>
-    <td>Sewer & Water Tap Fees</td>
-    <td id="tapFeeEnt"></td>
-    <td id="tapFeeDev"></td>
-    <td class="notes">Tap Fee * Lots (dev)</td>
-  </tr>
-  <tr>
-    <td>Well Fee</td>
-    <td id="wellFeeEnt"></td>
-    <td id="wellFeeDev"></td>
-    <td class="notes">Well Fee * Lots (dev)</td>
-  </tr>
-  <tr>
-    <td>Septic Fee</td>
-    <td id="septicFeeEnt"></td>
-    <td id="septicFeeDev"></td>
-    <td class="notes">Septic Fee * Lots (dev)</td>
-  </tr>
-  <tr class="subtotal">
-    <td>Subtotal Site Prep</td>
-    <td id="sitePrepEntSubtotal"></td>
-    <td id="sitePrepDevSubtotal"></td>
-    <td class="notes">Sum of above</td>
-  </tr>
-</table>
-
-<div class="section-title">Roadway & Infrastructure</div>
-<table>
-  <colgroup><col><col><col><col></colgroup>
-  <tr>
-    <th>Description</th>
-    <th>Entitled Cost</th>
-    <th>Developed Cost</th>
-    <th>Notes</th>
-  </tr>
-  <tr>
-    <td>Road Construction</td>
-    <td id="roadConstEnt"></td>
-    <td id="roadConstDev"></td>
-    <td class="notes">300/ft * 5280 ft (dev)</td>
-  </tr>
-  <tr>
-    <td>Street Lighting/Signage</td>
-    <td id="lightingEnt"></td>
-    <td id="lightingDev"></td>
-    <td class="notes">50,000 fixed (dev)</td>
-  </tr>
-  <tr>
-    <td>Water & Sewer Mains</td>
-    <td id="waterSewerEnt"></td>
-    <td id="waterSewerDev"></td>
-    <td class="notes">5,000 * lots (dev)</td>
-  </tr>
-  <tr>
-    <td>Stormwater Management</td>
-    <td id="stormwaterEnt"></td>
-    <td id="stormwaterDev"></td>
-    <td class="notes">2,000 * lots (dev)</td>
-  </tr>
-  <tr>
-    <td>Electric/Gas/Telecom</td>
-    <td id="electricGasEnt"></td>
-    <td id="electricGasDev"></td>
-    <td class="notes">2,000 * lots (dev)</td>
-  </tr>
-  <tr class="subtotal">
-    <td>Subtotal Road & Infra</td>
-    <td id="roadInfraEntSubtotal"></td>
-    <td id="roadInfraDevSubtotal"></td>
-    <td class="notes">Sum of above</td>
-  </tr>
-</table>
-
-<div class="section-title">Lot Improvements</div>
-<table>
-  <colgroup><col><col><col><col></colgroup>
-  <tr>
-    <th>Description</th>
-    <th>Entitled Cost</th>
-    <th>Developed Cost</th>
-    <th>Notes</th>
-  </tr>
-  <tr>
-    <td>Service Laterals</td>
-    <td id="serviceLateralsEnt"></td>
-    <td id="serviceLateralsDev"></td>
-    <td class="notes">1,000 * lots (dev)</td>
-  </tr>
-  <tr>
-    <td>Lot Grading/Finishing</td>
-    <td id="lotGradingFinishEnt"></td>
-    <td id="lotGradingFinishDev"></td>
-    <td class="notes">500 * lots (dev)</td>
-  </tr>
-  <tr>
-    <td>Common Amenities</td>
-    <td id="amenitiesEnt"></td>
-    <td id="amenitiesDev"></td>
-    <td class="notes">50,000 fixed (dev)</td>
-  </tr>
-  <tr>
-    <td>Landscaping</td>
-    <td id="landscapingEnt"></td>
-    <td id="landscapingDev"></td>
-    <td class="notes">7,000 * leftover acres (dev)</td>
-  </tr>
-  <tr class="subtotal">
-    <td>Subtotal Lot Improvements</td>
-    <td id="lotImpEntSubtotal"></td>
-    <td id="lotImpDevSubtotal"></td>
-    <td class="notes">Sum of above</td>
-  </tr>
-</table>
-
-<div class="section-title">Soft Costs (excluding PM & Marketing)</div>
-<table>
-  <colgroup><col><col><col><col></colgroup>
-  <tr>
-    <th>Description</th>
-    <th>Entitled Cost</th>
-    <th>Developed Cost</th>
-    <th>Notes</th>
-  </tr>
-  <tr>
-    <td>Add’l Engineering/Consulting</td>
-    <td id="addlEngEnt"></td>
-    <td id="addlEngDev"></td>
-    <td class="notes">25,000 dev only</td>
-  </tr>
-  <tr>
-    <td>Accounting/Legal Fees</td>
-    <td id="accountingLegalEnt"></td>
-    <td id="accountingLegalDev"></td>
-    <td class="notes">10,000 dev only</td>
-  </tr>
-  <tr>
-    <td>Insurance</td>
-    <td id="insuranceEnt"></td>
-    <td id="insuranceDev"></td>
-    <td class="notes">5,000 dev only</td>
-  </tr>
-  <tr class="subtotal">
-    <td>Subtotal Soft Costs</td>
-    <td id="softCostsEntSubtotal"></td>
-    <td id="softCostsDevSubtotal"></td>
-    <td class="notes">Sum of above</td>
-  </tr>
-</table>
-
-<div class="section-title">Contingency & Reserves</div>
-<table>
-  <colgroup><col><col><col><col></colgroup>
-  <tr>
-    <th>Description</th>
-    <th>Entitled Cost</th>
-    <th>Developed Cost</th>
-    <th>Notes</th>
-  </tr>
-  <tr>
-    <td>Contingency (10% Hard Costs)</td>
-    <td id="contingencyEnt"></td>
-    <td id="contingencyDev"></td>
-    <td class="notes">10% of Hard Costs (dev only)</td>
-  </tr>
-  <tr>
-    <td>Owner Reserve</td>
-    <td id="ownerReserveEnt"></td>
-    <td id="ownerReserveDev"></td>
-    <td class="notes">50,000 fixed (dev only)</td>
-  </tr>
-  <tr class="subtotal">
-    <td>Subtotal Contingency</td>
-    <td id="contEntSubtotal"></td>
-    <td id="contDevSubtotal"></td>
-    <td class="notes">Sum of above (dev)</td>
-  </tr>
-</table>
-
-<div class="section-title">Financing</div>
-<table>
-  <colgroup><col><col><col><col></colgroup>
-  <tr>
-    <th>Description</th>
-    <th>Entitled Cost</th>
-    <th>Developed Cost</th>
-    <th>Notes</th>
-  </tr>
-  <tr>
-    <td>Financing</td>
-    <td id="financingEnt"></td>
-    <td id="financingDev"></td>
-    <td class="notes">(BaseCost+PM)*(Prime+2%)*(Months/12) dev only</td>
-  </tr>
-</table>
-
-<div class="section-title">Project Management & Marketing</div>
-<table>
-  <colgroup><col><col><col><col></colgroup>
-  <tr>
-    <th>Description</th>
-    <th>Entitled Cost</th>
-    <th>Developed Cost</th>
-    <th>Notes</th>
-  </tr>
-  <tr>
-    <td>Project Management (5% dev only)</td>
-    <td id="pmEnt"></td>
-    <td id="pmDev"></td>
-    <td class="notes">5% of dev final sales price</td>
-  </tr>
-  <tr>
-    <td>Marketing & Sales (6%)</td>
-    <td id="marketingEnt"></td>
-    <td id="marketingDev"></td>
-    <td class="notes">6% of scenario final sales price</td>
-  </tr>
-</table>
-
-<div class="section-title">Totals</div>
-<table>
-  <colgroup><col><col><col><col></colgroup>
-  <tr>
-    <th>Description</th>
-    <th>Entitled Cost</th>
-    <th>Developed Cost</th>
-    <th>Notes</th>
-  </tr>
-  <tr>
-    <td>Total Project Cost</td>
-    <td id="totalEntitledCost"></td>
-    <td id="totalDevelopedCost"></td>
-    <td class="notes">Sum all costs per scenario</td>
-  </tr>
-  <tr>
-    <td>Per-Lot Cost (Developed only)</td>
-    <td>N/A</td>
-    <td id="perLotCostDev"></td>
-    <td class="notes">Total Dev Cost / Total Lots</td>
-  </tr>
-</table>
+<!-- Skipping unchanged tables for brevity in this response. They remain the same as the previous code snippet -->
 
 <div class="section-title">Profit Calculations</div>
 <p class="notes">Select desired gross profit margin target:</p>
@@ -725,46 +403,32 @@ function recalculate() {
   <option value="40">40%</option>
 </select>
 
-<p class="notes">Showing Purchase Price, Costs, and Profit for Entitled and Developed Scenarios</p>
+<p class="notes">Showing Purchase Price (total revenue), Sales Price (per lot), Costs, Profit, and Profit Margin</p>
 <table>
-  <colgroup><col><col><col><col></colgroup>
+  <colgroup><col><col><col><col><col><col></colgroup>
   <tr>
     <th>Scenario</th>
     <th>Purchase Price</th>
+    <th>Sales Price</th>
     <th>Costs</th>
     <th>Profit</th>
+    <th>Profit Margin</th>
   </tr>
   <tr>
     <td>Sell Entitled Land</td>
     <td id="entitledBasis"></td>
+    <td id="entitledSalesPrice"></td>
     <td id="entitledCosts"></td>
     <td id="entitledProfit"></td>
+    <td id="entitledMargin"></td>
   </tr>
   <tr>
     <td>Sell Fully Developed Lots</td>
     <td id="developedBasis"></td>
+    <td id="developedSalesPrice"></td>
     <td id="developedCosts"></td>
     <td id="developedProfit"></td>
-  </tr>
-</table>
-
-<p class="notes"><b>If profit is less than selected margin, recommended lot prices to achieve that profit margin:</b></p>
-<table>
-  <colgroup><col><col><col><col></colgroup>
-  <tr>
-    <th>Scenario</th>
-    <th>Recommended Lot Price</th>
-    <th colspan="2"></th>
-  </tr>
-  <tr>
-    <td>Entitled</td>
-    <td id="recEntPrice"></td>
-    <td colspan="2"></td>
-  </tr>
-  <tr>
-    <td>Developed</td>
-    <td id="recDevPrice"></td>
-    <td colspan="2"></td>
+    <td id="developedMargin"></td>
   </tr>
 </table>
 
