@@ -64,8 +64,6 @@ function recalculate() {
   const difficulty = document.getElementById('gradingDifficulty').value;
   const primeRate = parseFloat(document.getElementById('primeRate').value) || 0;
   const carryingMonths = parseFloat(document.getElementById('carryingMonths').value) || 12;
-  // targetMargin was previously used, but now we don't have a dropdown. We'll just set a default:
-  const targetMargin = 30;
 
   const totalLots = acres * usablePercent * lotsPerAcre;
 
@@ -154,7 +152,7 @@ function recalculate() {
   const developedProfit = developedRevenue - totalDevelopedCost;
   const developedMargin = (totalDevelopedCost > 0) ? (developedProfit / totalDevelopedCost) : 0;
 
-  // Land cost is purchase price, other costs is total costs minus land
+  // Land cost is purchase price, costs is total costs minus land
   const entitledLandOnly = landPurchaseTotal;
   const entitledOtherCosts = totalEntitledCost - landPurchaseTotal;
 
@@ -164,129 +162,21 @@ function recalculate() {
   // Update displayed values
   document.getElementById('totalLots').textContent = formatNumber(totalLots);
 
-  // Land & Entitlement
-  document.getElementById('landPurchaseCost').textContent = formatNumber(landPurchaseTotal);
-  document.getElementById('engineering').textContent = formatNumber(engineering);
-  document.getElementById('surveying').textContent = formatNumber(surveying);
-  document.getElementById('adminLegal').textContent = formatNumber(adminLegal);
-  document.getElementById('environmental').textContent = formatNumber(environmental);
-  document.getElementById('geoTests').textContent = formatNumber(geoTests);
-  document.getElementById('landEntSubtotalEnt').textContent = formatNumber(landEntitlementSubtotal);
-  document.getElementById('landEntSubtotalDev').textContent = formatNumber(landEntitlementSubtotal);
+  // Populate scenario table with 6 columns: Scenario, Purchase Price(Land), Costs, Sales Price to Builder, Profit, Profit Margin
 
-  // Site Prep
-  document.getElementById('clearingGradingEnt').textContent = formatNumber(0);
-  document.getElementById('clearingGradingDev').textContent = formatNumber(clearingGrading);
-
-  document.getElementById('erosionEnt').textContent = formatNumber(0);
-  document.getElementById('erosionDev').textContent = formatNumber(erosionControl);
-
-  document.getElementById('tapFeeEnt').textContent = formatNumber(0);
-  document.getElementById('tapFeeDev').textContent = formatNumber(tapFeesTotal);
-
-  document.getElementById('wellFeeEnt').textContent = formatNumber(0);
-  document.getElementById('wellFeeDev').textContent = formatNumber(wellFeesTotal);
-
-  document.getElementById('septicFeeEnt').textContent = formatNumber(0);
-  document.getElementById('septicFeeDev').textContent = formatNumber(septicFeesTotal);
-
-  document.getElementById('sitePrepEntSubtotal').textContent = formatNumber(0);
-  document.getElementById('sitePrepDevSubtotal').textContent = formatNumber(sitePrepDeveloped);
-
-  // Road & Infrastructure
-  document.getElementById('roadConstEnt').textContent = formatNumber(0);
-  document.getElementById('roadConstDev').textContent = formatNumber(roadConstruction);
-
-  document.getElementById('lightingEnt').textContent = formatNumber(0);
-  document.getElementById('lightingDev').textContent = formatNumber(lightingSignage);
-
-  document.getElementById('waterSewerEnt').textContent = formatNumber(0);
-  document.getElementById('waterSewerDev').textContent = formatNumber(waterSewer);
-
-  document.getElementById('stormwaterEnt').textContent = formatNumber(0);
-  document.getElementById('stormwaterDev').textContent = formatNumber(stormwater);
-
-  document.getElementById('electricGasEnt').textContent = formatNumber(0);
-  document.getElementById('electricGasDev').textContent = formatNumber(electricGas);
-
-  document.getElementById('roadInfraEntSubtotal').textContent = formatNumber(0);
-  document.getElementById('roadInfraDevSubtotal').textContent = formatNumber(roadInfraDeveloped);
-
-  // Lot Improvements
-  document.getElementById('serviceLateralsEnt').textContent = formatNumber(0);
-  document.getElementById('serviceLateralsDev').textContent = formatNumber(serviceLaterals);
-
-  document.getElementById('lotGradingFinishEnt').textContent = formatNumber(0);
-  document.getElementById('lotGradingFinishDev').textContent = formatNumber(lotGradingFinish);
-
-  document.getElementById('amenitiesEnt').textContent = formatNumber(0);
-  document.getElementById('amenitiesDev').textContent = formatNumber(commonAmenities);
-
-  document.getElementById('landscapingEnt').textContent = formatNumber(0);
-  document.getElementById('landscapingDev').textContent = formatNumber(landscaping);
-
-  document.getElementById('lotImpEntSubtotal').textContent = formatNumber(0);
-  document.getElementById('lotImpDevSubtotal').textContent = formatNumber(lotImprovementsDeveloped);
-
-  // Soft Costs
-  document.getElementById('addlEngEnt').textContent = formatNumber(0);
-  document.getElementById('addlEngDev').textContent = formatNumber(addlEng);
-
-  document.getElementById('accountingLegalEnt').textContent = formatNumber(0);
-  document.getElementById('accountingLegalDev').textContent = formatNumber(accountingLegal);
-
-  document.getElementById('insuranceEnt').textContent = formatNumber(0);
-  document.getElementById('insuranceDev').textContent = formatNumber(insurance);
-
-  document.getElementById('softCostsEntSubtotal').textContent = formatNumber(0);
-  document.getElementById('softCostsDevSubtotal').textContent = formatNumber(softCostsBase);
-
-  // Contingency & Reserves
-  document.getElementById('contingencyEnt').textContent = formatNumber(0);
-  document.getElementById('contingencyDev').textContent = formatNumber(contingency);
-
-  document.getElementById('ownerReserveEnt').textContent = formatNumber(0);
-  document.getElementById('ownerReserveDev').textContent = formatNumber(ownerReserve);
-
-  document.getElementById('contEntSubtotal').textContent = formatNumber(0);
-  document.getElementById('contDevSubtotal').textContent = formatNumber(contingencySubtotal);
-
-  // Financing
-  document.getElementById('financingEnt').textContent = formatNumber(0);
-  document.getElementById('financingDev').textContent = formatNumber(financingSubtotal);
-
-  // PM & Marketing
-  document.getElementById('pmEnt').textContent = formatNumber(pmEntitled);
-  document.getElementById('pmDev').textContent = formatNumber(pmDeveloped);
-
-  document.getElementById('marketingEnt').textContent = formatNumber(marketingEntitled);
-  document.getElementById('marketingDev').textContent = formatNumber(marketingDeveloped);
-
-  // Totals
-  document.getElementById('totalEntitledCost').textContent = formatNumber(totalEntitledCost);
-  document.getElementById('totalDevelopedCost').textContent = formatNumber(totalDevelopedCost);
-
-  const perLotDev = (totalLots>0)?totalDevelopedCost/totalLots:0;
-  document.getElementById('perLotCostDev').textContent = formatNumber(perLotDev);
-
-  // Profit & Margin
-  const entitledProfitText = formatNumber(entitledProfit);
-  const developedProfitText = formatNumber(developedProfit);
-  const entitledMarginPercent = (entitledMargin * 100).toFixed(2) + '%';
-  const developedMarginPercent = (developedMargin * 100).toFixed(2) + '%';
-
-  // Update scenario table with 6 columns: scenario, purchase price(land), costs, sales price, profit, profit margin
+  // Entitled scenario
   document.getElementById('entitledLandCost').textContent = formatNumber(entitledLandOnly);
   document.getElementById('entitledOtherCosts').textContent = formatNumber(entitledOtherCosts);
   document.getElementById('entitledSalesPrice').textContent = formatNumber(entitledLotPrice);
-  document.getElementById('entitledProfit').textContent = entitledProfitText;
-  document.getElementById('entitledMargin').textContent = entitledMarginPercent;
+  document.getElementById('entitledProfit').textContent = formatNumber(entitledProfit);
+  document.getElementById('entitledMargin').textContent = (entitledMargin * 100).toFixed(2) + '%';
 
+  // Developed scenario
   document.getElementById('developedLandCost').textContent = formatNumber(developedLandOnly);
   document.getElementById('developedOtherCosts').textContent = formatNumber(developedOtherCosts);
   document.getElementById('developedSalesPrice').textContent = formatNumber(developedLotPrice);
-  document.getElementById('developedProfit').textContent = developedProfitText;
-  document.getElementById('developedMargin').textContent = developedMarginPercent;
+  document.getElementById('developedProfit').textContent = formatNumber(developedProfit);
+  document.getElementById('developedMargin').textContent = (developedMargin * 100).toFixed(2) + '%';
 }
 </script>
 </head>
@@ -294,46 +184,4 @@ function recalculate() {
 
 <h1>Subdivision Development Proforma</h1>
 
-<div class="section-title">Inputs</div>
-<table>
-  <colgroup><col><col><col><col></colgroup>
-  <!-- Inputs table content unchanged -->
-  ...
-</table>
-
-<!-- All cost tables remain unchanged -->
-<!-- ... -->
-
-<!-- Updated scenario table with 6 columns -->
-<table>
-  <colgroup><col><col><col><col><col><col></colgroup>
-  <tr>
-    <th>Scenario</th>
-    <th>Purchase Price (Land)</th>
-    <th>Costs</th>
-    <th>Sales Price to Builder</th>
-    <th>Profit</th>
-    <th>Profit Margin</th>
-  </tr>
-  <tr>
-    <td>Sell Entitled Land</td>
-    <td id="entitledLandCost"></td>
-    <td id="entitledOtherCosts"></td>
-    <td id="entitledSalesPrice"></td>
-    <td id="entitledProfit"></td>
-    <td id="entitledMargin"></td>
-  </tr>
-  <tr>
-    <td>Sell Fully Developed Lots</td>
-    <td id="developedLandCost"></td>
-    <td id="developedOtherCosts"></td>
-    <td id="developedSalesPrice"></td>
-    <td id="developedProfit"></td>
-    <td id="developedMargin"></td>
-  </tr>
-</table>
-
-<p class="notes">Adjust values, formulas, and references as needed. Update the prime rate daily.</p>
-
-</body>
-</html>
+<div class="secti
