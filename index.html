@@ -93,20 +93,13 @@ function recalculate() {
   const wellFeesTotal = wellFee * totalLots;
   const septicFeesTotal = septicFee * totalLots;
 
-  // If tap fees are 0, set water & sewer mains cost to 0
-  // Otherwise, use the default calculation (5,000 * total lots).
-  let waterSewer = 5000 * totalLots;
-  if (tapFeesTotal === 0) {
-    waterSewer = 0;
-  }
-
   // Site Prep (developed scenario)
   const sitePrepDeveloped = clearingGrading + erosionControl + tapFeesTotal + wellFeesTotal + septicFeesTotal;
 
   // Road & Infrastructure (developed scenario)
   const roadConstruction = 300 * 5280;
   const lightingSignage = 50000;
-  // waterSewer now conditionally set above
+  const waterSewer = 5000 * totalLots;
   const stormwater = 2000 * totalLots;
   const electricGas = 2000 * totalLots;
   const roadInfraDeveloped = roadConstruction + lightingSignage + waterSewer + stormwater + electricGas;
@@ -137,8 +130,11 @@ function recalculate() {
   const baseCostNoPMNoMktNoFin = hardCostsDeveloped + softCostsBase + contingencySubtotal;
 
   // Project Management & Marketing
+  // PM: 5% of developedRevenue, 0 for entitled
   const pmEntitled = 0;
   const pmDeveloped = developedRevenue * 0.05;
+
+  // Marketing: 6% of scenario revenue
   const marketingEntitled = entitledRevenue * 0.06;
   const marketingDeveloped = developedRevenue * 0.06;
 
@@ -146,29 +142,36 @@ function recalculate() {
   const financingSubtotal = (baseCostNoPMNoMktNoFin + pmDeveloped) * ((primeRate + 2)/100) * (carryingMonths / 12);
 
   // Total Costs
+  // Entitled scenario: landEntitlementSubtotal + marketing
   const totalEntitledCost = landEntitlementSubtotal + marketingEntitled;
   const entitledProfit = entitledRevenue - totalEntitledCost;
   const entitledMargin = (totalEntitledCost > 0) ? (entitledProfit / totalEntitledCost) : 0;
 
+  // Developed scenario: all included
   const totalDevelopedCost = baseCostNoPMNoMktNoFin + pmDeveloped + financingSubtotal + marketingDeveloped;
   const developedProfit = developedRevenue - totalDevelopedCost;
   const developedMargin = (totalDevelopedCost > 0) ? (developedProfit / totalDevelopedCost) : 0;
 
+  // Land cost is purchase price, costs is total costs minus land
   const entitledLandOnly = landPurchaseTotal;
   const entitledOtherCosts = totalEntitledCost - landPurchaseTotal;
 
   const developedLandOnly = landPurchaseTotal;
   const developedOtherCosts = totalDevelopedCost - landPurchaseTotal;
 
+  // Update displayed values
   document.getElementById('totalLots').textContent = formatNumber(totalLots);
 
-  // Update scenario table with 6 columns: scenario, purchase price(land), costs, sales price to builder, profit, profit margin
+  // Populate scenario table with 6 columns: Scenario, Purchase Price(Land), Costs, Sales Price to Builder, Profit, Profit Margin
+
+  // Entitled scenario
   document.getElementById('entitledLandCost').textContent = formatNumber(entitledLandOnly);
   document.getElementById('entitledOtherCosts').textContent = formatNumber(entitledOtherCosts);
   document.getElementById('entitledSalesPrice').textContent = formatNumber(entitledLotPrice);
   document.getElementById('entitledProfit').textContent = formatNumber(entitledProfit);
   document.getElementById('entitledMargin').textContent = (entitledMargin * 100).toFixed(2) + '%';
 
+  // Developed scenario
   document.getElementById('developedLandCost').textContent = formatNumber(developedLandOnly);
   document.getElementById('developedOtherCosts').textContent = formatNumber(developedOtherCosts);
   document.getElementById('developedSalesPrice').textContent = formatNumber(developedLotPrice);
@@ -181,7 +184,14 @@ function recalculate() {
 
 <h1>Subdivision Development Proforma</h1>
 
-<!-- The rest of your HTML, including the inputs and costs tables, remains unchanged -->
+<div class="section-title">Inputs</div>
+<table>
+  <colgroup><col><col><col><col></colgroup>
+  <!-- Inputs table code remains unchanged -->
+  ...
+</table>
+
+<!-- All cost tables remain unchanged -->
 <!-- ... -->
 
 <!-- Updated scenario table with 6 columns -->
